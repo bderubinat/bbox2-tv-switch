@@ -41,6 +41,11 @@ require "tv-switch.inc";
 
 Switch on or off TV plugs 3 and 4.
 
+=item Warning
+
+This script is provided with no warranty. It has been tested and is functionnal on a
+Belgacom BBox2.
+
 =item Syntax
 
 tv-switch.pl status		# returns the status of plugs
@@ -87,6 +92,8 @@ my $browser = WWW::Mechanize->new(
 $browser->cookie_jar($cookie_jar);
 
 sub save_page {
+    return unless $debug;
+
     my ($fn, $html) = @_;
     open LOG, ">/tmp/$fn.html";
     print LOG $html;
@@ -131,6 +138,7 @@ given ($ARGV[1]) {
 }
 
 
+printf ("Connecting to BBox2 (%s):\n", $bbox);
 $res = get_page($home, "home");
 
 my $id;
@@ -151,13 +159,14 @@ $res=$browser->submit_form();
 save_page("route",$res->content);
 
 
+print "Current settings ... \n";
+
 $id=`/bin/grep f.action= /tmp/home.html |head -1|cut -d\\" -f2`;
 chomp $id;
 $browser->form_name('form_contents')->action("http://$bbox$id");
 $browser->field('mimic_button_field'=>'btn_tab_goto: 810..');
 $res=$browser->submit_form();
 save_page("routing",$res->content);
-
 
 $id=`/bin/grep f.action= /tmp/home.html |head -1|cut -d\\" -f2`;
 chomp $id;
@@ -167,6 +176,8 @@ printf ("%s: on\n", $plug[0])  if ($browser->value('tv_port_1'));
 printf ("%s: on\n", $plug[1])  if ($browser->value('tv_port_2'));
 printf ("%s: on\n", $plug[2])  if ($browser->value('tv_port_3'));
 printf ("%s: on\n", $plug[3])  if ($browser->value('tv_port_4'));
+
+print "Switching ... \n";
 
 my $post = undef;
 switch ("$tvstate$tvstate2") {
@@ -198,7 +209,7 @@ if ($post) {
 	$res=$browser->submit_form();
 	save_page("applied",$res->content);
 
-	print "Now:\n";
+	print "New settings:\n";
 
 	printf ("%s: on\n", $plug[0])  if ($browser->value('tv_port_1'));
 	printf ("%s: on\n", $plug[1])  if ($browser->value('tv_port_2'));
